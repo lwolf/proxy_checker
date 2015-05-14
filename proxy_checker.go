@@ -3,30 +3,27 @@ package main
 import (
 	"flag"
 	"fmt"
-	"strings"
-	"io/ioutil"
 	"github.com/abh/geoip"
-	"gopkg.in/mgo.v2"
 	"github.com/parnurzeal/gorequest"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"net"
+	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
+	"strings"
 )
-
 
 const TESTURL = "https://api.github.com"
 
-
 type Proxy struct {
-  Scheme    string        `bson:"protocol"`
-  Host 		string        `bson:"host"`
-  Port 		string        `bson:"port"`
-  Country 	string        `bson:"country"`
-  Status 	bool        `bson:"status"`
+	Scheme  string `bson:"protocol"`
+	Host    string `bson:"host"`
+	Port    string `bson:"port"`
+	Country string `bson:"country"`
+	Status  bool   `bson:"status"`
 }
-
 
 func (p *Proxy) getURI() string {
 	return fmt.Sprintf("%s://%s:%s", p.Scheme, p.Host, p.Port)
@@ -40,7 +37,7 @@ func checkProxy(p Proxy) bool {
 	var isAlive bool
 	request := gorequest.New().Proxy(p.getURI())
 	resp, _, _ := request.Get(TESTURL).End()
-	if resp.Status == "200 OK"{
+	if resp.Status == "200 OK" {
 		isAlive = true
 	} else {
 		isAlive = false
@@ -51,11 +48,10 @@ func checkProxy(p Proxy) bool {
 
 func updateProxy(p Proxy, status bool, mongo mgo.Collection) {
 	err := mongo.Update(bson.M{"host": p.Host, "port": p.Port}, bson.M{"$set": bson.M{"status": status, "country": p.Country}})
-    if err != nil {
-        log.Fatal(err)
-    }
+	if err != nil {
+		log.Fatal(err)
+	}
 }
-
 
 //Load proxies from fineproxy account
 func downloadProxy(mongo mgo.Collection, login string, password string, g geoip.GeoIP) {
@@ -80,9 +76,9 @@ func downloadProxy(mongo mgo.Collection, login string, password string, g geoip.
 	if err != nil {
 		panic(err)
 	}
-    var proxies []Proxy
-    proxies_list := strings.Split(string(body), "\r\n")
-  	for _, value := range proxies_list {
+	var proxies []Proxy
+	proxies_list := strings.Split(string(body), "\r\n")
+	for _, value := range proxies_list {
 		if !strings.Contains(value, ":") {
 			continue
 		}
@@ -90,21 +86,21 @@ func downloadProxy(mongo mgo.Collection, login string, password string, g geoip.
 		country, _ := g.GetCountry(host)
 		proxy := Proxy{"http", host, port, country, false}
 		proxies = append(proxies, proxy)
-  	}
-  	// var c chan map[Proxy string] = make(chan map[Proxy string])
-  	for _, proxy := range proxies {
-  		go updateProxy(proxy, checkProxy(proxy), mongo)
-  	}
+	}
+	// var c chan map[Proxy string] = make(chan map[Proxy string])
+	for _, proxy := range proxies {
+		go updateProxy(proxy, checkProxy(proxy), mongo)
+	}
 }
 
 func checkProxies(mongo mgo.Collection) {
 	var result Proxy
 	iter := mongo.Find(nil).Iter()
 	for iter.Next(&result) {
-        updateProxy(result, true, mongo)
+		updateProxy(result, true, mongo)
 	}
 	if err := iter.Close(); err != nil {
-	    log.Fatal(err)
+		log.Fatal(err)
 	}
 
 }
@@ -121,7 +117,7 @@ func main() {
 	flag.Parse()
 	geoIP, err := geoip.Open("/usr/share/GeoIP/GeoIP.dat")
 	if err != nil {
-	    fmt.Printf("Could not open GeoIP database: %s\n", err)
+		fmt.Printf("Could not open GeoIP database: %s\n", err)
 	}
 	if *runMode == "download" {
 		if *login == "" || *password == "" {
@@ -137,7 +133,7 @@ func main() {
 	connection := mongo.DB(*database).C(*collection)
 	// ensure index in collection for unique `host + port`
 	switch *runMode {
-	case "download":	
+	case "download":
 		println("Going to download proxies from remote...")
 		downloadProxy(*connection, *login, *password, *geoIP)
 	case "check":
