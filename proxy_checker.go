@@ -97,7 +97,7 @@ func checkProxies(mongo mgo.Collection) {
 	var result Proxy
 	iter := mongo.Find(nil).Iter()
 	for iter.Next(&result) {
-		updateProxy(result, checkProxy(proxy), mongo)
+		updateProxy(result, checkProxy(result), mongo)
 	}
 	if err := iter.Close(); err != nil {
 		log.Fatal(err)
