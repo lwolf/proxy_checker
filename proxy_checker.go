@@ -55,7 +55,6 @@ func updateProxy(p Proxy, status bool, mongo mgo.Collection) {
 
 //Load proxies from fineproxy account
 func downloadProxy(mongo mgo.Collection, login string, password string, g geoip.GeoIP) {
-	println("DOWNLOAD PROXY", login, password)
 	request_url := "http://account.fineproxy.org/api/getproxy/"
 	parsed_request_url, _ := url.Parse(request_url)
 	url_params := url.Values{
